@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Result Management System - Complete</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+        }
+        body { background: var(--primary); min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
+        .dashboard-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .grade-badge { padding: 6px 12px; border-radius: 20px; font-weight: bold; }
+        .grade-A { background: #d4edda; color: #155724; }
+        .grade-B { background: #fff3cd; color: #856404; }
+        .grade-C { background: #cce7ff; color: #004085; }
+        .grade-F { background: #f8d7da; color: #721c24; }
+        .stat-box { background: var(--primary); color: white; padding: 15px; border-radius: 15px; text-align: center; }
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <!-- Stats Dashboard -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="dashboard-card p-4 mb-3">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="stat-box">
+                                <h3 id="totalCount">0</h3>
+                                <small>Total Students</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-box" style="background: var(--success);">
+                                <h3 id="passCount">0</h3>
+                                <small>Passed</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-box" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);">
+                                <h3 id="failCount">0</h3>
+                                <small>Failed</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                <h3 id="avgPerc">0%</h3>
+                                <small>Avg %</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form & Actions -->
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="dashboard-card">
+                    <div class="card-header bg-primary text-white">
+                        <h5><i class="bi bi-person-plus"></i> Add/Edit Student</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="studentForm">
+                            <input type="hidden" id="editId">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" id="name" placeholder="Full Name *" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" class="form-control" id="rollno" placeholder="Roll No *" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-control" id="class" required>
+                                        <option value="">Select Class</option>
+                                        <option value="9th">9th</option>
+                                        <option value="10th">10th</option>
+                                        <option value="11th">11th</option>
+                                        <option value="12th">12th</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="number" class="form-control" id="subject1" placeholder="Mathematics" min="0" max="100">
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="number" class="form-control" id="subject2" placeholder="Science" min="0" max="100">
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="number" class="form-control" id="subject3" placeholder="English" min="0" max="100">
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-success me-2 btn-lg">
+                                    <i class="bi bi-check-lg"></i> Save Student
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-lg" onclick="resetForm()">
+                                    <i class="bi bi-arrow-clockwise"></i> New Student
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="col-lg-4 mb-4">
+                <div class="dashboard-card h-100 no-print">
+                    <div class="card-header bg-info text-white">
+                        <h6><i class="bi bi-gear"></i> Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="searchInput" placeholder="🔍 Search name/roll...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="showAll()">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="exportCSV()">
+                                <i class="bi bi-download"></i> 📥 Export CSV
+                            </button>
+                            <button class="btn btn-info" onclick="document.getElementById('csvFile').click()">
+                                <i class="bi bi-upload"></i> 📤 Import CSV
+                            </button>
+                            <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="importCSV(event)">
+                            <button class="btn btn-warning" onclick="printResults()">
+                                <i class="bi bi-printer"></i> 🖨️ Print
+                            </button>
+                            <button class="btn btn-danger" onclick="clearAll()">
+                                <i class="bi bi-trash"></i> 🗑️ Clear All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="dashboard-card">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-dark text-white">
+                        <h5><i class="bi bi-table"></i> Students Results 
+                            <span class="badge bg-light text-dark ms-2" id="filterBadge">All</span>
+                        </h5>
+                        <div class="no-print">
+                            <span class="badge bg-light text-dark fs-6 me-2" id="studentsCount">0</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>#</th><th>Name</th><th>Roll</th><th>Class</th><th>M</th><th>S</th><th>E</th><th>Total</th><th>%</th><th>Grade</th><th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // ========== GLOBAL APP ==========
+        let app = {
+            students: [],
+            filtered: []
+        };
+
+        // ========== INIT ==========
+        function initApp() {
+            loadData();
+            bindEvents();
+            updateStats();
+            renderTable();
+            console.log('✅ Pro System Ready!');
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('studentsPro');
+            if (saved) {
+                app.students = JSON.parse(saved);
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('studentsPro', JSON.stringify(app.students));
+        }
+
+        function bindEvents() {
+            document.getElementById('studentForm').onsubmit = function(e) {
+                e.preventDefault();
+                saveStudent();
+            };
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                searchStudents(e.target.value);
+            });
+        }
+
+        // ========== STUDENT OPERATIONS ==========
+        function saveStudent() {
+            const editId = document.getElementById('editId').value;
+            const data = {
+                name: document.getElementById('name').value.trim(),
+                rollno: document.getElementById('rollno').value.trim(),
+                class: document.getElementById('class').value,
+                subject1: parseFloat(document.getElementById('subject1').value) || 0,
+                subject2: parseFloat(document.getElementById('subject2').value) || 0,
+                subject3: parseFloat(document.getElementById('subject3').value) || 0
+            };
+
+            const total = data.subject1 + data.subject2 + data.subject3;
+            const percentage = (total / 300) * 100;
+            const grade = percentage >= 80 ? 'A' : percentage >= 60 ? 'B' : percentage >= 40 ? 'C' : 'F';
+
+            const student = {
+                ...data,
+                id: editId ? parseInt(editId) : Date.now(),
+                total, percentage, grade
+            };
+
+            if (editId) {
+                const index = app.students.findIndex(s => s.id === parseInt(editId));
+                app.students[index] = student;
+                alert('✅ Updated!');
+            } else {
+                app.students.unshift(student);
+                alert('✅ Added!');
+            }
+
+            saveData();
+            resetForm();
+            renderTable();
+            updateStats();
+        }
+
+        function editStudent(id) {
+            const student = app.students.find(s => s.id === id);
+            if (student) {
+                document.getElementById('editId').value = student.id;
+                document.getElementById('name').value = student.name;
+                document.getElementById('rollno').value = student.rollno;
+                document.getElementById('class').value = student.class;
+                document.getElementById('subject1').value = student.subject1;
+                document.getElementById('subject2').value = student.subject2;
+                document.getElementById('subject3').value = student.subject3;
+                document.querySelector('#studentForm button[type="submit"]').innerHTML = '<i class="bi bi-check-lg"></i> Update Student';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('studentForm').reset();
+            document.getElementById('editId').value = '';
+            document.querySelector('#studentForm button[type="submit"]').innerHTML = '<i class="bi bi-check-lg"></i> Save Student';
+        }
+
+        function deleteStudent(id) {
+            if (confirm('Delete this student?')) {
+                app.students = app.students.filter(s => s.id !== id);
+                saveData();
+                renderTable();
+                updateStats();
+            }
+        }
+
+        // ========== DISPLAY ==========
+        function renderTable(filtered = app.students) {
+            const tbody = document.getElementById('resultsTable');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" class="text-center p-5"><i class="bi bi-inbox display-4 text-muted"></i><p class="mt-3 mb-0">No students found</p></td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((s, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${s.name}</td>
+                    <td>${s.rollno}</td>
+                    <td><span class="badge bg-info">${s.class}</span></td>
+                    <td>${s.subject1}</td>
+                    <td>${s.subject2}</td>
+                    <td>${s.subject3}</td>
+                    <td><strong class="text-success">${s.total}</strong></td>
+                    <td><strong>${s.percentage.toFixed(1)}%</strong></td>
+                    <td><span class="grade-badge grade-${s.grade}">${s.grade}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-1" onclick="editStudent(${s.id})" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteStudent(${s.id})" title="Delete">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function searchStudents(query) {
+            if (!query.trim()) {
+                renderTable(app.students);
+                document.getElementById('filterBadge').textContent = 'All';
+            } else {
+                const filtered = app.students.filter(s => 
+                    s.name.toLowerCase().includes(query.toLowerCase()) ||
+                    s.rollno.toLowerCase().includes(query.toLowerCase())
+                );
+                renderTable(filtered);
+                document.getElementById('filterBadge').textContent = `${filtered.length} found`;
+            }
+        }
+
+        function updateStats() {
+            const total = app.students.length;
+            const passed = app.students.filter(s => s.grade !== 'F').length;
+            const failed = total - passed;
+            const avg = app.students.reduce((sum, s) => sum + s.percentage, 0) / total || 0;
+
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('passCount').textContent = passed;
+            document.getElementById('failCount').textContent = failed;
+            document.getElementById('avgPerc').textContent = avg.toFixed(1) + '%';
+            document.getElementById('studentsCount').textContent = total;
+        }
+
+        // ========== BUTTON FUNCTIONS (GLOBAL) ==========
+        function exportCSV() {
+            if (app.students.length === 0) {
+                alert('No students to export!');
+                return;
+            }
+            
+            let csv = 'ID,Name,Roll No,Class,Maths,Science,English,Total,Percentage,Grade\n';
+            app.students.forEach(s => {
+                csv += `${s.id},"${s.name}","${s.rollno}","${s.class}",${s.subject1},${s.subject2},${s.subject3},${s.total},${s.percentage.toFixed(1)},"${s.grade}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Student_Results_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+            alert('✅ CSV Downloaded!');
+        }
+
+        function importCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const csv = e.target.result;
+                const lines = csv.split('\n').slice(1);
+                let count = 0;
+                
+                lines.forEach((line, index) => {
+                    if (line.trim()) {
+                        const cols = line.split(',');
+                        if (cols.length >= 9) {
+                            const student = {
+                                id: Date.now() + index,
+                                name: cols[1]?.replace(/"/g, '').trim() || 'Unknown',
+                                rollno: cols[2]?.replace(/"/g, '').trim() || 'N/A',
+                                class: cols[3]?.replace(/"/g, '').trim() || 'N/A',
+                                subject1: parseFloat(cols[4]) || 0,
+                                subject2: parseFloat(cols[5]) || 0,
+                                subject3: parseFloat(cols[6]) || 0,
+                                total: parseFloat(cols[7]) || 0,
+                                percentage: parseFloat(cols[8]) || 0,
+                                grade: cols[9]?.replace(/"/g, '').trim() || 'F'
+                            };
+                            app.students.push(student);
+                            count++;
+                        }
+                    }
+                });
+                
+                saveData();
+                renderTable();
+                updateStats();
+                event.target.value = '';
+                alert(`✅ ${count} students imported!`);
+            };
+            reader.readAsText(file);
+        }
+
+        function printResults() {
+            window.print();
+        }
+
+        function clearAll() {
+            if (confirm('Delete ALL students?')) {
+                app.students = [];
+                localStorage.removeItem('studentsPro');
+                renderTable();
+                updateStats();
+                resetForm();
+                alert('🗑️ All data cleared!');
+            }
+        }
+
+        function showAll() {
+            document.getElementById('searchInput').value = '';
+            renderTable(app.students);
+            document.getElementById('filterBadge').textContent = 'All';
+        }
+
+        // ========== START APP ==========
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
